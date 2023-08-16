@@ -20,7 +20,7 @@
 require("dotenv").config();
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
+const infuraKey = process.env.INFURAKEY;
 //
 // const fs = require('fs');
 const mnemonic = process.env.MNEMONIC.toString().trim();
@@ -71,10 +71,25 @@ module.exports = {
       provider: () => {
         return new HDWalletProvider(
           mnemonic,
-          `https://rpc.goerli.linea.build/`,
+          `https://linea-goerli.infura.io/v3/${infuraKey}`,
         );
       },
+      // truffle run verify <DEPLOYED_CONTRACT_NAME> --network linea
+      verify: {
+        apiUrl: "https://api-testnet.lineascan.build/api",        
+        apiKey: process.env.ETHERSCAN_API_KEY,
+        explorerUrl: "https://goerli.lineascan.build/address",      
+      },
       network_id: "59140",
+    },
+    sepolia: {
+      provider: () => {
+        return new HDWalletProvider(
+          mnemonic,
+          `https://sepolia.infura.io/v3/${infuraKey}`,
+        );
+      },
+      network_id: "11155111",
     }
     // Useful for private networks
     // private: {
@@ -103,4 +118,5 @@ module.exports = {
       // }
     },
   },
+  plugins: ["truffle-plugin-verify"],
 };
