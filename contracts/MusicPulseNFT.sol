@@ -8,6 +8,8 @@ contract MusicPulseNFT is ERC721URIStorage {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
+  string[] public musicURLList;
+
   constructor() ERC721("MusicPulseNFT", "MPN") {}
 
   function mint(address to_, string memory tokenURI_) public returns (uint256) {
@@ -16,6 +18,11 @@ contract MusicPulseNFT is ERC721URIStorage {
     _setTokenURI(newItemId, tokenURI_);
 
     _tokenIds.increment();
+    musicURLList.push(tokenURI_);
     return newItemId;
+  }
+
+  function getMusicURLList() external view returns (string[] memory) {
+    return musicURLList;
   }
 }
