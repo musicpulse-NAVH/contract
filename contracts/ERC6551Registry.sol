@@ -3,9 +3,18 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "./interfaces/IERC6551Registry.sol";
+import "./AccessToken.sol";
 
 contract ERC6551Registry is IERC6551Registry {
     error InitializationFailed();
+
+    AccessToken public token;
+
+    event Purchased(uint256 indexed nftid, address from, uint date);
+
+    constructor(address tokenAddress) {
+        token = AccessToken(tokenAddress);
+    }
 
     function createAccount(
         address implementation,
@@ -77,5 +86,25 @@ contract ERC6551Registry is IERC6551Registry {
                 hex"5af43d82803e903d91602b57fd5bf3",
                 abi.encode(salt_, chainId_, tokenContract_, tokenId_)
             );
+    }
+
+    function purchaseAccessToken(
+        address implementation,
+        uint256 chainId,
+        address tokenContract,
+        uint256 tokenId,
+        uint256 salt
+    ) external payable {
+        bytes32 bytecodeHash = keccak256(
+            _creationCode(implementation, chainId, tokenContract, tokenId, salt)
+        );
+
+        address nftAccount = Create2.computeAddress(bytes32(salt), bytecodeHash);
+
+        (bool success, ) = nftAccount.call{value: msg.value}("");
+        require(success, "Failed to send ETH");
+        token.mint(msg.sender);
+
+        emit Purchased(tokenId, msg.sender, block.timestamp);
     }
 }
