@@ -9,12 +9,9 @@ contract ERC6551Registry is IERC6551Registry {
     error InitializationFailed();
 
     AccessToken public token;
+    mapping(address => address) public tba_to_erc20;
 
     event Purchased(uint256 indexed nftid, address from, uint date);
-
-    constructor(address tokenAddress) {
-        token = AccessToken(tokenAddress);
-    }
 
     function createAccount(
         address implementation,
@@ -45,6 +42,9 @@ contract ERC6551Registry is IERC6551Registry {
             (bool success, ) = _account.call(initData);
             if (!success) revert InitializationFailed();
         }
+
+        AccessToken accessContract = new AccessToken();
+        tba_to_erc20[_account] = address(accessContract);
 
         emit AccountCreated(
             _account,
@@ -103,7 +103,7 @@ contract ERC6551Registry is IERC6551Registry {
 
         (bool success, ) = nftAccount.call{value: msg.value}("");
         require(success, "Failed to send ETH");
-        token.mint(msg.sender);
+        AccessToken(tba_to_erc20[nftAccount]).mint(msg.sender);
 
         emit Purchased(tokenId, msg.sender, block.timestamp);
     }
