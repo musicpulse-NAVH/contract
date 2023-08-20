@@ -12,6 +12,7 @@ contract ERC6551Registry is IERC6551Registry {
     mapping(address => address) public tba_to_erc20;
 
     event Purchased(uint256 indexed nftid, address from, uint date);
+    event AccessTokenCreated(address nftcontract, address accesstokencontract);
 
     function createAccount(
         address implementation,
@@ -42,9 +43,6 @@ contract ERC6551Registry is IERC6551Registry {
             (bool success, ) = _account.call(initData);
             if (!success) revert InitializationFailed();
         }
-
-        AccessToken accessContract = new AccessToken();
-        tba_to_erc20[_account] = address(accessContract);
 
         emit AccountCreated(
             _account,
@@ -86,6 +84,25 @@ contract ERC6551Registry is IERC6551Registry {
                 hex"5af43d82803e903d91602b57fd5bf3",
                 abi.encode(salt_, chainId_, tokenContract_, tokenId_)
             );
+    }
+
+    function createAccessToken(
+        address implementation,
+        uint256 chainId,
+        address tokenContract,
+        uint256 tokenId,
+        uint256 salt
+    ) external payable {
+        bytes32 bytecodeHash = keccak256(
+            _creationCode(implementation, chainId, tokenContract, tokenId, salt)
+        );
+
+        address nftAccount = Create2.computeAddress(bytes32(salt), bytecodeHash);
+
+        AccessToken accessContract = new AccessToken();
+        tba_to_erc20[nftAccount] = address(accessContract);
+
+        emit AccessTokenCreated(address(accessContract), nftAccount);
     }
 
     function purchaseAccessToken(
