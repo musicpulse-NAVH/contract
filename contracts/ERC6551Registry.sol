@@ -10,6 +10,7 @@ contract ERC6551Registry is IERC6551Registry {
 
     AccessToken public token;
     mapping(address => address) public tba_to_erc20;
+    mapping(address => string) private tba_to_url;
 
     event Purchased(uint256 indexed nftid, address from, uint date);
     event AccessTokenCreated(address nftcontract, address accesstokencontract);
@@ -103,6 +104,41 @@ contract ERC6551Registry is IERC6551Registry {
         tba_to_erc20[nftAccount] = address(accessContract);
 
         emit AccessTokenCreated(address(accessContract), nftAccount);
+    }
+
+    function setURL(
+        address implementation,
+        uint256 chainId,
+        address tokenContract,
+        uint256 tokenId,
+        uint256 salt,
+        string calldata url
+    ) external {
+        bytes32 bytecodeHash = keccak256(
+            _creationCode(implementation, chainId, tokenContract, tokenId, salt)
+        );
+
+        address nftAccount = Create2.computeAddress(bytes32(salt), bytecodeHash);
+
+        tba_to_url[nftAccount] = url;
+    }
+
+    function getURL(
+        address implementation,
+        uint256 chainId,
+        address tokenContract,
+        uint256 tokenId,
+        uint256 salt
+    ) external view returns (string memory) {
+        bytes32 bytecodeHash = keccak256(
+            _creationCode(implementation, chainId, tokenContract, tokenId, salt)
+        );
+        
+        address nftAccount = Create2.computeAddress(bytes32(salt), bytecodeHash);
+
+        require(AccessToken(tba_to_erc20[nftAccount]).balanceOf(msg.sender) > 0, "You do not have the Access Token");
+
+        return tba_to_url[nftAccount];
     }
 
     function purchaseAccessToken(
